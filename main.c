@@ -1,4 +1,5 @@
 #define _POSIX_SOURCE
+#define _BSD_SOURCE
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -17,10 +18,15 @@ void input_handle(char input[]);
 
 int main(int args, char ** argv) {
 	char cwd[1024], input[81];
+	char *uid = getenv("USER");
+	char *home = getenv("HOME");
+	char hostname[1024];
+	hostname[1023] = '\0';
+	gethostname(hostname, 1023);
 
 	while(strcmp(input, "exit")) {
 		if(getcwd(cwd, sizeof(cwd)) != NULL) { 			/*Get current working directory*/
-			printf(BOLDGREEN	"%s (%d) $ "	RESET, cwd, getpid());	/*Print the prompt*/
+			printf(BOLDGREEN	"%s@%s" BOLDBLUE " %s $ "	RESET, uid, hostname, str_replace(cwd, home, "~"));	/*Print the prompt*/
 		}
 		if(fgets(input, 80, stdin)){				/*Scan user input*/
 			input[strcspn(input, "\r\n")] = 0;		/*Remove trailing newline*/
