@@ -13,6 +13,7 @@
 #include "colors.h"
 #include "util.h"
 
+/*Hej jag är en fisk*/
 int terminate();
 void kill_child(pid_t child_id);
 void input_handle(char input[]);
