@@ -40,35 +40,13 @@ int main(int args, char ** argv) {
 	return 0;
 }
 
-char * find_command(char * folder, char * str){
-	DIR *d;
-	static char return_string[1024] = {'\0'};
-	struct dirent *dir;
-	d = opendir(folder);
-	if (d) {
-		while ((dir = readdir(d)) != NULL) {
-		  if(strcmp(str, dir->d_name) == 0){
-		  	strcat(return_string, folder);
-		  	strcat(return_string, str);
-		  }
-		}
-
-		closedir(d);
-	}
-	if(return_string[0] == '\0')
-		return str;
-	return return_string;
-}
-
 void input_handle(char input[]) {
 	pid_t childpid = fork();
 		
 	if(childpid == 0) { /*Child process*/
 		char * charv[10];
 		split_string(charv, input);
-		charv[0] = find_command("/usr/bin/", charv[0]);
-		charv[0] = find_command("/bin/", charv[0]);
-		execv(charv[0], charv);
+		execvp(charv[0], charv);
 		exit(0);
 	} else { 			/*Parent process*/
 		if(childpid == -1) {
