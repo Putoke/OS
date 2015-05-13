@@ -44,7 +44,7 @@ void close_a_pipe(int pipe[2]) {
 	}
 }
 
-void close_pipe(int args, ...) {
+void close_pipes(int args, ...) {
 	va_list valist;
 	int i=0;
 	va_start(valist, args);
@@ -53,6 +53,7 @@ void close_pipe(int args, ...) {
 		close_a_pipe(pipe);
 		++i;
 	}
+	va_end(valist);
 }
 
 #endif

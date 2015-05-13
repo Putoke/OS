@@ -112,7 +112,7 @@ void check_env(char ** args) {
 		/*Child process*/
 		dup2(pipe_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO);
 
-		close_pipe(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
+		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
 
 		(void) execlp("printenv", "printenv", (char *) 0);
 		perror("Cannot exec printenv"); exit(1);
@@ -124,7 +124,7 @@ void check_env(char ** args) {
 		dup2(pipe_filedesc[PIPE_READ_SIDE], STDIN_FILENO);
 		dup2(pipe2_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO);
 
-		close_pipe(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
+		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
 
 		args[0] = "grep";
 		if(args[1] != '\0') {
@@ -140,7 +140,7 @@ void check_env(char ** args) {
 		dup2(pipe2_filedesc[PIPE_READ_SIDE], STDIN_FILENO);
 		dup2(pipe3_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO);
 
-		close_pipe(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
+		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
 
 		(void) execlp("sort", "sort", (char *) 0);
 		perror("Cannot exec sort"); exit(1);
@@ -151,13 +151,13 @@ void check_env(char ** args) {
 		/*Child process*/
 		dup2(pipe3_filedesc[PIPE_READ_SIDE], STDIN_FILENO);
 
-		close_pipe(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
+		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
 
 		(void) execlp("less", "less", (char *) 0);
 		perror("Cannot exec less"); exit(1);
 	}
 
-	close_pipe(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
+	close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
 
 	childpid = wait(&status);
 	childpid = wait(&status);
