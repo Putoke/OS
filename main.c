@@ -90,7 +90,9 @@ void signal_handler(int signal_code){
 
 void cleanup_handler(int signal_code) {
 	if(childpid > 0 && signal_code == SIGINT) {
-		kill(childpid, SIGKILL);
+		kill_child(childpid);
+		wait(NULL);
+		printf("\n");
 	}
 }
 
