@@ -38,7 +38,9 @@ int main(int args, char ** argv) {
 		}
 		if(fgets(input, 80, stdin)){				/*Scan user input*/
 			input[strcspn(input, "\r\n")] = 0;		/*Remove trailing newline*/
-			input_handle(input);
+
+			if (input[0] != '\0')
+				input_handle(input);
 		}
 	}
 	
