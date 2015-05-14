@@ -7,9 +7,10 @@
 #include <signal.h>
 #include "util.h"
 
-int terminate() {
+int terminate(pid_t childpid) {
 
-	kill(0, SIGTERM);
+	kill(childpid, SIGKILL);
+	exit(0);
 	return 0;
 }
 

@@ -44,7 +44,7 @@ int main(int args, char ** argv) {
 		}
 	}
 	
-	terminate();
+	terminate(childpid);
 	return 0;
 }
 
