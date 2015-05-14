@@ -22,6 +22,12 @@ void input_handle(char input[]);
 void cd(const char * input);
 void check_env(char ** args);
 
+void register_sighandler(int signal_code, void (*handler)(int sig));
+void signal_handler(int signal_code);
+void cleanup_handler(int signal_code);
+
+pid_t childpid;
+
 int main(int args, char ** argv) {
 	char cwd[1024], input[81];
 	char *uid = getenv("USER");
@@ -45,11 +51,12 @@ int main(int args, char ** argv) {
 }
 
 void input_handle(char input[]) {
-	pid_t childpid = fork();
 	char * charv[10];
+	childpid = fork();
 	split_string(charv, input);
 		
 	if(childpid == 0) { /*Child process*/
+		register_sighandler(SIGINT, signal_handler);
 		if(strcmp(charv[0], "checkEnv") == 0)
 			check_env(charv);
 		else
@@ -62,6 +69,7 @@ void input_handle(char input[]) {
 			if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
 			fprintf( stderr, "fork() failed because: %s\n", errormessage );
 		}
+		register_sighandler(SIGINT, cleanup_handler);
 		if(strcmp(charv[0], "cd") == 0)
 			cd(charv[1]);
 		wait(NULL);
@@ -90,7 +98,7 @@ void check_env(char ** args) {
 	int pipe_filedesc[2];
 	int pipe2_filedesc[2];
 	int pipe3_filedesc[2];
-	pid_t childpid;
+	pid_t child_pid;
 	int ret_value;
 	int status;
 	
@@ -107,8 +115,8 @@ void check_env(char ** args) {
 		perror("cannot create pipe 3"); exit(1);
 	}
 
-	childpid = fork();
-	if(childpid == 0) {
+	child_pid = fork();
+	if(child_pid == 0) {
 		/*Child process*/
 		dup2(pipe_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO);
 
@@ -118,8 +126,8 @@ void check_env(char ** args) {
 		perror("Cannot exec printenv"); exit(1);
 	}
 
-	childpid = fork();
-	if(childpid == 0) {
+	child_pid = fork();
+	if(child_pid == 0) {
 		/*Child process*/
 		dup2(pipe_filedesc[PIPE_READ_SIDE], STDIN_FILENO);
 		dup2(pipe2_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO);
@@ -134,8 +142,8 @@ void check_env(char ** args) {
 		execlp("grep", "grep", "", (char *) 0);
 	}
 
-	childpid = fork();
-	if(childpid == 0) {
+	child_pid = fork();
+	if(child_pid == 0) {
 		/*Child process*/
 		dup2(pipe2_filedesc[PIPE_READ_SIDE], STDIN_FILENO);
 		dup2(pipe3_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO);
@@ -146,8 +154,8 @@ void check_env(char ** args) {
 		perror("Cannot exec sort"); exit(1);
 	}
 
-	childpid = fork();
-	if(childpid == 0) {
+	child_pid = fork();
+	if(child_pid == 0) {
 		/*Child process*/
 		dup2(pipe3_filedesc[PIPE_READ_SIDE], STDIN_FILENO);
 
@@ -159,11 +167,28 @@ void check_env(char ** args) {
 
 	close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
 
-	childpid = wait(&status);
-	childpid = wait(&status);
-	childpid = wait(&status);
-	childpid = wait(&status);
+	child_pid = wait(&status);
+	child_pid = wait(&status);
+	child_pid = wait(&status);
+	child_pid = wait(&status);
 }
 
+void signal_handler(int signal_code){
+
+}
+
+void cleanup_handler(int signal_code) {
+	if(childpid > 0 && signal_code == SIGINT) {
+		kill(childpid, SIGKILL);
+	}
+}
+
+void register_sighandler(int signal_code, void (*handler)(int sig)) {
+	struct sigaction signal_parameters;
+	signal_parameters.sa_handler = handler;
+	sigemptyset( &signal_parameters.sa_mask );
+	signal_parameters.sa_flags = 0;
+	sigaction( signal_code, &signal_parameters, (void *) 0);
+}
 
 
