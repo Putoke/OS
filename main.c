@@ -70,6 +70,7 @@ void input_handle(char input[]) {
 	
 	if(background == FALSE) {
 		sighold(SIGCHLD);
+		sigrelse(SIGINT);
 	} else {
 		sighold(SIGINT);
 	}
