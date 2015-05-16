@@ -1,6 +1,10 @@
 #define _POSIX_SOURCE
 #define _BSD_SOURCE
 
+#define TRUE 1
+#define FALSE 0
+
+#define SIGDET 1
 
 #include <stdio.h>
 #include <errno.h>
@@ -32,6 +36,9 @@ int main(int args, char ** argv) {
 	hostname[1023] = '\0';
 	gethostname(hostname, 1023);
 
+	register_sighandler(SIGINT, cleanup_handler);
+	register_sighandler(SIGCHLD, cleanup_handler);
+
 	while(strcmp(input, "exit")) {
 		if(getcwd(cwd, sizeof(cwd)) != NULL) { 			/*Get current working directory*/
 			printf(BOLDGREEN	"%s@%s" BOLDBLUE " %s $ "	RESET, uid, hostname, str_replace(cwd, home, "~"));	/*Print the prompt*/
@@ -50,50 +57,82 @@ int main(int args, char ** argv) {
 
 void input_handle(char input[]) {
 	char * charv[10];
-	childpid = fork();
+	int background = FALSE;
 	split_string(charv, input);
+
+	if(charv[0][strlen(charv[0])-1] == '&' || (charv[1] != '\0' && strcmp(charv[1], "&") == 0) ) { /*Check if the user wants to create a background process*/
+		background = TRUE;
+		if(charv[0][strlen(charv[0])-1] == '&' )
+			charv[0][strlen(charv[0])-1] = '\0';
+		if((charv[1] != '\0' && strcmp(charv[1], "&") == 0))
+			charv[1] = 0; 
+	}
+	
+	if(background == FALSE) {
+		sighold(SIGCHLD);
+	} else {
+		sighold(SIGINT);
+	}
+
+	childpid = fork();
 		
 	if(childpid == 0) { /*Child process*/
-		register_sighandler(SIGINT, signal_handler);
+
 		if(strcmp(charv[0], "checkEnv") == 0)
 			check_env(charv);
-		else
+		else {
 			execvp(charv[0], charv);
+		}
 		exit(0);
+
 	} else { 			/*Parent process*/
+		
 		if(childpid == -1) {
 			char * errormessage = "UNKNOWN";
 			if( EAGAIN == errno ) errormessage = "cannot allocate page table";
 			if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
 			fprintf( stderr, "fork() failed because: %s\n", errormessage );
 		}
-		register_sighandler(SIGINT, cleanup_handler);
+		if (background == TRUE) {
+			pid_t child;
+			if(SIGDET) {
+				sigrelse(SIGCHLD);
+			} else {
+				while((child = waitpid(-1, NULL, WNOHANG)) > 0) {
+					printf("Background process %d terminated\n", child);
+				}
+			}
+			return;
+		}
+		sigrelse(SIGINT);
+		
 		if(strcmp(charv[0], "cd") == 0)
 			cd(charv[1]);
-		wait(NULL);
+
+		waitpid(childpid, 0, 0);
+
 	}
 }
 
-
-
 void kill_child(pid_t child_id) {
-	kill(child_id, SIGKILL);
-}
-
-
-
-
-
-void signal_handler(int signal_code){
-
+	kill(child_id, SIGTERM);
 }
 
 void cleanup_handler(int signal_code) {
+	pid_t pid;
+    int status;
+
 	if(childpid > 0 && signal_code == SIGINT) {
 		kill_child(childpid);
-		wait(NULL);
-		printf("\n");
+		waitpid(childpid, 0, 0);
 	}
+
+	if(childpid > 0 && signal_code == SIGCHLD) {
+		while((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+			printf("Process (%d) terminated with status %d\n", pid, status);
+		}
+	}
+		
 }
 
 void register_sighandler(int signal_code, void (*handler)(int sig)) {
