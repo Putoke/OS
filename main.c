@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/time.h>
 
 #include "colors.h"
 #include "util.h"
@@ -25,6 +26,8 @@ void input_handle(char input[]);
 void register_sighandler(int signal_code, void (*handler)(int sig));
 void signal_handler(int signal_code);
 void cleanup_handler(int signal_code);
+
+void poll();
 
 pid_t childpid;
 
@@ -49,6 +52,9 @@ int main(int args, char ** argv) {
 
 			if (input[0] != '\0')
 				input_handle(input);
+			if(!SIGDET) {
+				poll();
+			}
 		}
 	}
 	
@@ -69,7 +75,7 @@ void input_handle(char input[]) {
 			charv[1] = 0; 
 	}
 	
-	if(background == FALSE) {
+	if(!background) {
 		sighold(SIGCHLD);
 		sigrelse(SIGINT);
 	} else {
@@ -88,31 +94,42 @@ void input_handle(char input[]) {
 		exit(0);
 
 	} else { 			/*Parent process*/
-		
+		static struct timeval tm1, tm2;
+		unsigned long t;
+
 		if(childpid == -1) {
 			char * errormessage = "UNKNOWN";
 			if( EAGAIN == errno ) errormessage = "cannot allocate page table";
 			if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
 			fprintf( stderr, "fork() failed because: %s\n", errormessage );
 		}
-		if (background == TRUE) {
-			pid_t child;
+		if (background) {
 			if(SIGDET) {
 				sigrelse(SIGCHLD);
-			} else {
-				while((child = waitpid(-1, NULL, WNOHANG)) > 0) {
-					printf("Background process %d terminated\n", child);
-				}
 			}
 			return;
 		}
+
 		sigrelse(SIGINT);
 		
 		if(strcmp(charv[0], "cd") == 0)
 			cd(charv[1]);
 
+		gettimeofday(&tm1, NULL);
+
 		waitpid(childpid, 0, 0);
 
+		gettimeofday(&tm2, NULL);
+		t = 1000 * (tm2.tv_sec - tm1.tv_sec) + (tm2.tv_usec - tm1.tv_usec) / 1000;
+		printf("Foreground process terminated in %lu milliseconds.\n", t);
+	}
+}
+
+void poll() {
+	pid_t child;
+	int status;
+	while((child = waitpid(-1, &status, WNOHANG)) > 0) {
+		printf("Background process %d terminated with status %d\n", child, status);
 	}
 }
 
@@ -121,8 +138,6 @@ void kill_child(pid_t child_id) {
 }
 
 void cleanup_handler(int signal_code) {
-	pid_t pid;
-    int status;
 
 	if(childpid > 0 && signal_code == SIGINT) {
 		kill_child(childpid);
@@ -130,9 +145,7 @@ void cleanup_handler(int signal_code) {
 	}
 
 	if(childpid > 0 && signal_code == SIGCHLD) {
-		while((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-			printf("Process (%d) terminated with status %d\n", pid, status);
-		}
+		poll();
 	}
 		
 }
