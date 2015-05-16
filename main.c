@@ -38,6 +38,7 @@ int main(int args, char ** argv) {
 
 	register_sighandler(SIGINT, cleanup_handler);
 	register_sighandler(SIGCHLD, cleanup_handler);
+	sighold(SIGTERM);
 
 	while(strcmp(input, "exit")) {
 		if(getcwd(cwd, sizeof(cwd)) != NULL) { 			/*Get current working directory*/
@@ -78,7 +79,7 @@ void input_handle(char input[]) {
 	childpid = fork();
 		
 	if(childpid == 0) { /*Child process*/
-
+		sigrelse(SIGTERM);
 		if(strcmp(charv[0], "checkEnv") == 0)
 			check_env(charv);
 		else {

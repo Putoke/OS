@@ -9,7 +9,7 @@
 
 int terminate(pid_t childpid) {
 
-	kill(childpid, SIGKILL);
+	kill(0, SIGTERM);
 	exit(0);
 	return 0;
 }
