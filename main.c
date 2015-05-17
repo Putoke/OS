@@ -26,7 +26,6 @@ void kill_child(pid_t child_id);
 void input_handle(char input[]);
 
 void register_sighandler(int signal_code, void (*handler)(int sig));
-void signal_handler(int signal_code);
 void cleanup_handler(int signal_code);
 
 void poll();
@@ -127,6 +126,10 @@ void input_handle(char input[]) {
 	}
 }
 
+
+/*
+	Poll for terminated process
+*/
 void poll() {
 	pid_t child;
 	int status;
@@ -135,6 +138,10 @@ void poll() {
 	}
 }
 
+
+/*
+	Kill child process by sending SIGTERM.
+*/
 void kill_child(pid_t child_id) {
 	kill(child_id, SIGTERM);
 }
@@ -152,6 +159,10 @@ void cleanup_handler(int signal_code) {
 		
 }
 
+
+/*
+	Register a signalhandler for a given signal.
+*/
 void register_sighandler(int signal_code, void (*handler)(int sig)) {
 	struct sigaction signal_parameters;
 	signal_parameters.sa_handler = handler;
