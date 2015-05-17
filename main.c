@@ -1,4 +1,5 @@
 #define _POSIX_SOURCE
+#define _XOPEN_SOURCE 500
 #define _BSD_SOURCE
 
 #define TRUE 1
@@ -13,6 +14,7 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #include "colors.h"
 #include "util.h"

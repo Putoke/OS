@@ -1,10 +1,13 @@
-#include "syscalls.h"
+#define _POSIX_SOURCE
 
+#include "syscalls.h"
 
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 #include "util.h"
 
 int terminate(pid_t childpid) {
