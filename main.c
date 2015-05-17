@@ -67,7 +67,7 @@ int main(int args, char ** argv) {
 void input_handle(char input[]) {
 	char * charv[10];
 	int background = FALSE;
-	split_string(charv, input);
+	split_string(charv, input, ' ');
 
 	if(charv[0][strlen(charv[0])-1] == '&' || (charv[1] != '\0' && strcmp(charv[1], "&") == 0) ) { /*Check if the user wants to create a background process*/
 		background = TRUE;

@@ -5,18 +5,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void split_string(char ** arr, char * input) {
+void split_string(char ** result, const char * input, const char delimiter) {
 
 	char * pch;
 	int i = 0;
-	pch = strtok (input," ");
+	pch = strtok (input, &delimiter);
 
 	while (pch != NULL)	{
-		arr[i] = pch;
-		pch = strtok (NULL, " ");
+		result[i] = pch;
+		pch = strtok (NULL, &delimiter);
 		++i;
 	}
-	arr[i] = NULL;
+	result[i] = NULL;
 
 }
 
