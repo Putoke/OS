@@ -1,6 +1,5 @@
 #define _POSIX_SOURCE
 #define _XOPEN_SOURCE 500
-#define _BSD_SOURCE
 
 #define TRUE 1
 #define FALSE 0
@@ -149,7 +148,6 @@ void kill_child(pid_t child_id) {
 }
 
 void cleanup_handler(int signal_code) {
-
 	if(childpid > 0 && signal_code == SIGINT) {
 		kill_child(childpid);
 		waitpid(childpid, 0, 0);
@@ -158,7 +156,6 @@ void cleanup_handler(int signal_code) {
 	if(childpid > 0 && signal_code == SIGCHLD) {
 		poll();
 	}
-		
 }
 
 

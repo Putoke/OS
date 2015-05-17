@@ -9,14 +9,14 @@ void split_string(char ** result, char * input, const char delimiter) {
 
 	char * pch;
 	int i = 0;
-	pch = strtok (input, &delimiter);
+	pch = strtok (input, &delimiter); /* Fetch string up to first occurence of delimiter */
 
 	while (pch != NULL)	{
-		result[i] = pch;
-		pch = strtok (NULL, &delimiter);
+		result[i] = pch; /* Store fetched string */
+		pch = strtok (NULL, &delimiter); /* Continue fetching strings */
 		++i;
 	}
-	result[i] = NULL;
+	result[i] = NULL; /* Indicate end of array */
 
 }
 
@@ -49,9 +49,9 @@ void close_pipes(int args, ...) {
 	va_list valist;
 	int i=0;
 	va_start(valist, args);
-	while(i < args) { /* iterate through the pipes and close them */
-		int *pipe = va_arg(valist, int*);
-		close_a_pipe(pipe); 
+	while(i < args) { /* iterate */
+		int *pipe = va_arg(valist, int*); /* get next pipe */
+		close_a_pipe(pipe); /* close the pipe */
 		++i;
 	}
 	va_end(valist);
