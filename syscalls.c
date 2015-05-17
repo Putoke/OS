@@ -25,7 +25,7 @@ void cd(const char * input) {
 	}
 }
 
-void check_env(char ** args) {
+void check_env(char ** args, char * pager) {
 	int pipe_filedesc[2];
 	int pipe2_filedesc[2];
 	int pipe3_filedesc[2];
@@ -92,8 +92,16 @@ void check_env(char ** args) {
 
 		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);
 
+		if(pager != NULL) {
+			(void) execlp(pager, pager, (char *) 0);
+			perror("Cannot exec pager"); exit(1);
+		}
+
 		(void) execlp("less", "less", (char *) 0);
 		perror("Cannot exec less"); exit(1);
+
+		(void) execlp("more", "more", (char *) 0);
+		perror("Cannot exec more"); exit(1);
 	}
 
 	close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc);

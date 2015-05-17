@@ -31,12 +31,14 @@ void cleanup_handler(int signal_code);
 void poll();
 
 pid_t childpid;
+char *pager;
 
 int main(int args, char ** argv) {
 	char cwd[1024], input[81];
 	char *uid = getenv("USER");
 	char *home = getenv("HOME");
 	char hostname[1024];
+	pager = getenv("PAGER");
 	hostname[1023] = '\0';
 	gethostname(hostname, 1023);
 
@@ -88,7 +90,7 @@ void input_handle(char input[]) {
 	if(childpid == 0) { /*Child process*/
 		sigrelse(SIGTERM);
 		if(strcmp(charv[0], "checkEnv") == 0)
-			check_env(charv);
+			check_env(charv, pager);
 		else {
 			execvp(charv[0], charv);
 		}

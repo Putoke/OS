@@ -12,7 +12,7 @@ void cd(const char * input);
 /*
 	TODO
 */
-void check_env(char ** args);
+void check_env(char ** args, char * pager);
 
 /*
 	Terminate the program by killing its children and then itself.
