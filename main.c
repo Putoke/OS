@@ -134,7 +134,7 @@ void input_handle(char input[]) {
 void poll() {
 	pid_t child;
 	int status;
-	while((child = waitpid(-1, &status, WNOHANG)) > 0) {
+	while((child = waitpid(-1, &status, WNOHANG)) > 0) { /* Poll for any terminated process */
 		printf("Background process %d terminated with status %d\n", child, status);
 	}
 }
@@ -144,9 +144,12 @@ void poll() {
 	Kill child process by sending SIGTERM.
 */
 void kill_child(pid_t child_id) {
-	kill(child_id, SIGTERM);
+	kill(child_id, SIGTERM); /* Terminated a process by sending a SIGTERM */
 }
 
+/*
+	Signal handler for SIGINT and SIGCHLD
+*/
 void cleanup_handler(int signal_code) {
 	if(childpid > 0 && signal_code == SIGINT) {
 		kill_child(childpid);
