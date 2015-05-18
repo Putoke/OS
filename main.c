@@ -4,7 +4,11 @@
 #define TRUE 1
 #define FALSE 0
 
-#define SIGDET 1
+#if defined(SIGDET) && SIGDET+0
+	int signalTerm = 1;
+#else
+	int signalTerm = 0;
+#endif
 
 #include <stdio.h>
 #include <errno.h>
@@ -60,7 +64,7 @@ int main(int args, char ** argv) {
 
 			if (input[0] != '\0' && input[0] != ' ') /*If input is not empty then handle input*/
 				input_handle(input);
-			if(!SIGDET) { /* if SIGDET is 0 then start polling for terminated child processes */
+			if(!signalTerm) { /* if signalTerm is 0 then start polling for terminated child processes */
 				poll();
 			}
 		}
@@ -112,8 +116,8 @@ void input_handle(char input[]) {
 			fprintf( stderr, "fork() failed because: %s\n", errormessage );
 		}
 		if (background) {
-			if(SIGDET) {
-				sigrelse_error(SIGCHLD); /* if SIGDET is defined and the child is a background process don't ignore SIGCHLD */
+			if(signalTerm) {
+				sigrelse_error(SIGCHLD); /* if signalTerm is defined and the child is a background process don't ignore SIGCHLD */
 			}
 			return;
 		}
