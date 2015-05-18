@@ -45,6 +45,10 @@ int main(int args, char ** argv) {
 	char *home = getenv("HOME"); /* Homepath */
 	char hostname[1024]; /* hostname */ 
 
+	int return_value = setsid(); /*start a new session with a new processor group id*/
+	if(return_value == -1)
+		perror("failed to start new session");
+
 	pager = getenv("PAGER"); /* PAGER env variable */
 	/*hostname[1023] = '\0'; */
 	gethostname(hostname, 1023); /* get hostname */
