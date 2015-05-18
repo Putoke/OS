@@ -54,8 +54,10 @@ void check_env(char ** args, char * pager) {
 	child_pid = fork(); /* create the first child process (printenv) */
 	if(child_pid == 0) {
 		/*Child process*/
-		dup2(pipe_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO); /* duplicate first pipe's file descriptor (write side) and replace stdout */
-
+		ret_value = dup2(pipe_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO); /* duplicate first pipe's file descriptor (write side) and replace stdout */
+		if (ret_value == -1) {
+			perror("Cannot dup"); exit(1);
+		}
 		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc); /* close all pipes */
 
 		(void) execlp("printenv", "printenv", (char *) 0); /* execute printenv */
@@ -65,8 +67,14 @@ void check_env(char ** args, char * pager) {
 	child_pid = fork(); /* create the second child process (grep) */
 	if(child_pid == 0) {
 		/*Child process*/
-		dup2(pipe_filedesc[PIPE_READ_SIDE], STDIN_FILENO); /* duplicate first pipe's file descriptor (read side) and replace stdin */
-		dup2(pipe2_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO); /* duplicate second pipe's file descriptor (write side) and replace stdout */
+		ret_value = dup2(pipe_filedesc[PIPE_READ_SIDE], STDIN_FILENO); /* duplicate first pipe's file descriptor (read side) and replace stdin */
+		if (ret_value == -1) {
+			perror("Cannot dup"); exit(1);
+		}
+		ret_value = dup2(pipe2_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO); /* duplicate second pipe's file descriptor (write side) and replace stdout */
+		if (ret_value == -1) {
+			perror("Cannot dup"); exit(1);
+		}
 
 		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc); /* close all pipes */
 
@@ -82,8 +90,14 @@ void check_env(char ** args, char * pager) {
 	child_pid = fork(); /* create the third child process (sort) r*/
 	if(child_pid == 0) {
 		/*Child process*/
-		dup2(pipe2_filedesc[PIPE_READ_SIDE], STDIN_FILENO); /* duplicate second pipe's file descriptor (read side) and replace stdin */
-		dup2(pipe3_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO); /* duplicate third pipe's file descriptor (write side) and replace stdout */
+		ret_value = dup2(pipe2_filedesc[PIPE_READ_SIDE], STDIN_FILENO); /* duplicate second pipe's file descriptor (read side) and replace stdin */
+		if (ret_value == -1) {
+			perror("Cannot dup"); exit(1);
+		}
+		ret_value = dup2(pipe3_filedesc[PIPE_WRITE_SIDE], STDOUT_FILENO); /* duplicate third pipe's file descriptor (write side) and replace stdout */
+		if (ret_value == -1) {
+			perror("Cannot dup"); exit(1);
+		}
 
 		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc); /* close all pipes */
 
@@ -94,7 +108,10 @@ void check_env(char ** args, char * pager) {
 	child_pid = fork(); /* create the fourth child proces (pager) */
 	if(child_pid == 0) {
 		/*Child process*/
-		dup2(pipe3_filedesc[PIPE_READ_SIDE], STDIN_FILENO); /* duplicate third pipe's file descriptor (read side) and replace stdin */
+		ret_value = dup2(pipe3_filedesc[PIPE_READ_SIDE], STDIN_FILENO); /* duplicate third pipe's file descriptor (read side) and replace stdin */
+		if (ret_value == -1) {
+			perror("Cannot dup"); exit(1);
+		}
 
 		close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc); /* close all pipes */
 
