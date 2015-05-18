@@ -20,8 +20,6 @@
 #include "syscalls.h"
 
 
-
-void kill_child(pid_t child_id);
 void input_handle(char input[]);
 
 void register_sighandler(int signal_code, void (*handler)(int sig));
@@ -33,73 +31,72 @@ pid_t childpid;
 char *pager;
 
 int main(int args, char ** argv) {
-	char cwd[1024], input[81];
-	char *uid = getenv("USER");
-	char *home = getenv("HOME");
-	char hostname[1024];
-	pager = getenv("PAGER");
-	hostname[1023] = '\0';
-	gethostname(hostname, 1023);
+	char cwd[1024]; /* current working directory buffer */
+	char input[1024]; /* user input buffer */
+	char *uid = getenv("USER"); /* Username */
+	char *home = getenv("HOME"); /* Homepath */
+	char hostname[1024]; /* hostname */ 
+	pager = getenv("PAGER"); /* PAGER env variable */
+	/*hostname[1023] = '\0'; */
+	gethostname(hostname, 1023); /* get hostname */
 
-	register_sighandler(SIGINT, cleanup_handler);
+	/* Register  signal handlers handlers */
+	register_sighandler(SIGINT, cleanup_handler); 
 	register_sighandler(SIGCHLD, cleanup_handler);
-	sighold(SIGTERM);
+	sighold(SIGTERM); /* Ignore SIGTERM signals */
 
-	while(strcmp(input, "exit")) {
+	while(strcmp(input, "exit")) { /* run until the user wants to exit */
 		if(getcwd(cwd, sizeof(cwd)) != NULL) { 			/*Get current working directory*/
 			printf(BOLDGREEN	"%s@%s" BOLDBLUE " %s $ "	RESET, uid, hostname, str_replace(cwd, home, "~"));	/*Print the prompt*/
 		}
-		if(fgets(input, 80, stdin)){				/*Scan user input*/
+		if(fgets(input, 1023, stdin)){				/*Scan user input*/
 			input[strcspn(input, "\r\n")] = 0;		/*Remove trailing newline*/
 
-			if (input[0] != '\0')
+			if (input[0] != '\0' && input[0] != ' ') /*If input is not empty then handle input*/
 				input_handle(input);
-			if(!SIGDET) {
+			if(!SIGDET) { /* if SIGDET is 0 then start polling for terminated child processes */
 				poll();
 			}
 		}
 	}
 	
-	terminate(childpid);
+	terminate(childpid); /* When the user has chosen to exit terminate all child processes then terminate the shell */
 	return 0;
 }
 
 void input_handle(char input[]) {
-	char * charv[10];
-	int background = FALSE;
-	split_string(charv, input, ' ');
+	char * charv[40]; /* argument buffer */
+	int background = FALSE; /* determines background or foreground process */
+	split_string(charv, input, ' '); /* split the input string on space to save arguments in buffer */
 
 	if(charv[0][strlen(charv[0])-1] == '&' || (charv[1] != '\0' && strcmp(charv[1], "&") == 0) ) { /*Check if the user wants to create a background process*/
-		background = TRUE;
-		if(charv[0][strlen(charv[0])-1] == '&' )
-			charv[0][strlen(charv[0])-1] = '\0';
-		if((charv[1] != '\0' && strcmp(charv[1], "&") == 0))
-			charv[1] = 0; 
-	}
-	
-	if(!background) {
-		sighold(SIGCHLD);
-		sigrelse(SIGINT);
+		background = TRUE; 
+		if(charv[0][strlen(charv[0])-1] == '&' ) /* if the input ended with a & then remove it from the string */
+			charv[0][strlen(charv[0])-1] = '\0'; 
+		if((charv[1] != '\0' && strcmp(charv[1], "&") == 0)) /* if the & character was an own anrgument then remove that argument */
+			charv[1] = '\0';
+		sighold(SIGINT); /* ignore SIGINT for background processes */
 	} else {
-		sighold(SIGINT);
+		sighold(SIGCHLD); /* ignore IGCHLD for foreground processes */
+		sigrelse(SIGINT); /* don't ignore SIGINT for foreground processes */
 	}
 
-	childpid = fork();
+	childpid = fork(); /* create child process */ 
 		
 	if(childpid == 0) { /*Child process*/
-		sigrelse(SIGTERM);
-		if(strcmp(charv[0], "checkEnv") == 0)
+		sigrelse(SIGTERM); /* don't ignore SIGTERM for child processes */
+		if(strcmp(charv[0], "checkEnv") == 0) /* if the input is checkEnv then run checkEnv function */
 			check_env(charv, pager);
 		else {
-			execvp(charv[0], charv);
+			execvp(charv[0], charv); /* execute the input */
 		}
-		exit(0);
+		exit(0); /* terminate the child */
 
 	} else { 			/*Parent process*/
-		static struct timeval tm1, tm2;
-		unsigned long t;
+		static struct timeval tm1, tm2; /* structs used to measure process runtime */
+		unsigned long t; /* total process runtime */
 
-		if(childpid == -1) {
+		if(childpid == -1) { /* if childpid is -1 then an error has occured */
 			char * errormessage = "UNKNOWN";
 			if( EAGAIN == errno ) errormessage = "cannot allocate page table";
 			if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
@@ -107,23 +104,23 @@ void input_handle(char input[]) {
 		}
 		if (background) {
 			if(SIGDET) {
-				sigrelse(SIGCHLD);
+				sigrelse(SIGCHLD); /* if SIGDET is defined and the child is a background process don't ignore SIGCHLD */
 			}
 			return;
 		}
 
-		sigrelse(SIGINT);
+		sigrelse(SIGINT); /* if the child is a foreground process ignore SIGCHLD */
 		
-		if(strcmp(charv[0], "cd") == 0)
+		if(strcmp(charv[0], "cd") == 0) /* if the input is cd then run the cd function */
 			cd(charv[1]);
 
-		gettimeofday(&tm1, NULL);
+		gettimeofday(&tm1, NULL); /* get the time in millis before waiting for the child */
 
-		waitpid(childpid, 0, 0);
+		waitpid(childpid, 0, 0); /* wait for the child to finish */
 
-		gettimeofday(&tm2, NULL);
-		t = 1000 * (tm2.tv_sec - tm1.tv_sec) + (tm2.tv_usec - tm1.tv_usec) / 1000;
-		printf("Foreground process terminated in %lu milliseconds.\n", t);
+		gettimeofday(&tm2, NULL); /* get the time after the child has terminated */
+		t = 1000 * (tm2.tv_sec - tm1.tv_sec) + (tm2.tv_usec - tm1.tv_usec) / 1000; /* calculate total child process runtime */
+		printf("Foreground process terminated in %lu milliseconds.\n", t); /* print child process runtimme */
 	}
 }
 
@@ -139,24 +136,16 @@ void poll() {
 	}
 }
 
-
-/*
-	Kill child process by sending SIGTERM.
-*/
-void kill_child(pid_t child_id) {
-	kill(child_id, SIGTERM); /* Terminated a process by sending a SIGTERM */
-}
-
 /*
 	Signal handler for SIGINT and SIGCHLD
 */
 void cleanup_handler(int signal_code) {
-	if(childpid > 0 && signal_code == SIGINT) {
-		kill_child(childpid);
+	if(childpid > 0 && signal_code == SIGINT) { /* if the signal is of type SIGINT then terminate the child and wait for it to finish */
+		kill(childpid, SIGTERM);
 		waitpid(childpid, 0, 0);
 	}
 
-	if(childpid > 0 && signal_code == SIGCHLD) {
+	if(childpid > 0 && signal_code == SIGCHLD) { /* if the signal is of type SIGCHLD then start polling for terminated child processes */
 		poll();
 	}
 }
@@ -166,11 +155,18 @@ void cleanup_handler(int signal_code) {
 	Register a signalhandler for a given signal.
 */
 void register_sighandler(int signal_code, void (*handler)(int sig)) {
-	struct sigaction signal_parameters;
-	signal_parameters.sa_handler = handler;
-	sigemptyset( &signal_parameters.sa_mask );
-	signal_parameters.sa_flags = 0;
-	sigaction( signal_code, &signal_parameters, (void *) 0);
+
+	int return_value;
+
+	struct sigaction signal_parameters; /* struct for sigaction parameters */
+	signal_parameters.sa_handler = handler; /* set the desired handler */
+	sigemptyset( &signal_parameters.sa_mask ); /* we don't need a mask so set it to an empty set */
+	signal_parameters.sa_flags = 0; /* we don't need flags so set it to 0*/
+	return_value = sigaction( signal_code, &signal_parameters, (void *) 0); /* register the handler */
+	
+	if ( return_value == -1) { /* sigaction failed */
+		 perror( "sigaction() failed" ); exit( 1 );
+	}
 }
 
 
