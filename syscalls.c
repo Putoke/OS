@@ -22,7 +22,10 @@ void terminate(pid_t childpid) {
 
 void cd(char * input) {
 	int return_value;
-	input = str_replace(input, "~", getenv("HOME"));
+	if(input != NULL)
+		input = str_replace(input, "~", getenv("HOME"));
+	else
+		input = getenv("HOME");
 	return_value = chdir(input); /* change directory */
 	if(return_value == -1) {
 		fprintf(stderr, "%s is not a directory\n", input);
