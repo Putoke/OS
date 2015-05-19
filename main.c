@@ -97,7 +97,7 @@ void input_handle(char input[]) {
 		sigrelse_error(SIGTERM); /* don't ignore SIGTERM for child processes */
 		if(strcmp(charv[0], "checkEnv") == 0) /* if the input is checkEnv then run checkEnv function */
 			check_env(charv, pager);
-		else {
+		else if(strcmp(charv[0], "cd") != 0){ /* don't try to execute cd */
 			execvp(charv[0], charv); /* execute the input */
 			perror("Failed to execute");
 			exit(1);

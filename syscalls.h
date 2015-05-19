@@ -7,7 +7,7 @@
 /*
 	Change the current working directory to the given string.
 */
-void cd(const char * input);
+void cd(char * input);
 
 /*
 	Print environment variables sorted and optionally with grep arguments.
