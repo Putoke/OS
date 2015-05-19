@@ -17,7 +17,7 @@ void check_env(char ** args, char * pager);
 /*
 	Terminate the program by killing its children and then itself.
 */
-void terminate(pid_t childpid);
+void terminate();
 
 /*
 	Handles errors regarding child processes.

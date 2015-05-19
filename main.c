@@ -27,16 +27,14 @@
 void input_handle(char input[]);
 
 void register_sighandler(int signal_code, void (*handler)(int sig));
-void cleanup_handler(int signal_code);
+void sigchld_handler(int signal_code);
+void sigint_handler(int signal_code);
 void sighold_error(int signal_code);
 void sigrelse_error(int signal_code);
 
 void poll();
 
-pid_t childpid;
 char *pager;
-
-
 
 int main(int args, char ** argv) {
 	char cwd[1024]; /* current working directory buffer */
@@ -50,8 +48,8 @@ int main(int args, char ** argv) {
 	gethostname(hostname, 1023); /* get hostname */
 
 	/* Register  signal handlers handlers */
-	register_sighandler(SIGINT, cleanup_handler); 
-	register_sighandler(SIGCHLD, cleanup_handler);
+	register_sighandler(SIGCHLD, sigchld_handler);
+	register_sighandler(SIGINT, sigint_handler);
 
 	sighold_error(SIGTERM); /* Ignore SIGTERM signals */
 
@@ -70,13 +68,14 @@ int main(int args, char ** argv) {
 		}
 	}
 	
-	terminate(childpid); /* When the user has chosen to exit terminate all child processes then terminate the shell */
+	terminate(); /* When the user has chosen to exit terminate all child processes then terminate the shell */
 	return 0;
 }
 
 void input_handle(char input[]) {
 	char * charv[40]; /* argument buffer */
 	int background = FALSE; /* determines background or foreground process */
+	pid_t childpid;
 	split_string(charv, input, ' '); /* split the input string on space to save arguments in buffer */
 
 	if(charv[0][strlen(charv[0])-1] == '&' || (charv[1] != '\0' && strcmp(charv[1], "&") == 0) ) { /*Check if the user wants to create a background process*/
@@ -94,6 +93,7 @@ void input_handle(char input[]) {
 	childpid = fork(); /* create child process */ 
 
 	if(childpid == 0) { /*Child process*/
+		register_sighandler(SIGINT, sigint_handler); 
 		sigrelse_error(SIGTERM); /* don't ignore SIGTERM for child processes */
 		if(strcmp(charv[0], "checkEnv") == 0) /* if the input is checkEnv then run checkEnv function */
 			check_env(charv, pager);
@@ -131,7 +131,11 @@ void input_handle(char input[]) {
 
 		ret_value = waitpid(childpid, 0, 0); /* wait for the child to finish */
 		if (ret_value == -1 ) {
-			perror("Wait failed unexpectedly");
+			if(errno == EINTR) {
+				printf("Child process was interrupted.\n");
+			} else {
+				perror("Wait failed unexpectedly");
+			}
 		}
 
 
@@ -153,22 +157,20 @@ void poll() {
 	}
 }
 
-/*
-	Signal handler for SIGINT and SIGCHLD
-*/
-void cleanup_handler(int signal_code) {
-	if(childpid > 0 && signal_code == SIGINT) { /* if the signal is of type SIGINT then terminate the child and wait for it to finish */
-		int ret_value = kill(childpid, SIGTERM);
-		if (ret_value == -1) {
-			perror("Failed to kill child process");
-		}
-		ret_value = waitpid(childpid, 0, 0);
-		if (ret_value == -1 ) {
+void sigint_handler(int signal_code) {
+	if(signal_code == SIGINT) {
+		int return_value = waitpid(-1, 0, 0); /* wait for the interrupted child to terminate */
+		if (return_value == -1 ) {
 			perror("Wait failed unexpectedly");
 		}
 	}
+}
 
-	if(childpid > 0 && signal_code == SIGCHLD) { /* if the signal is of type SIGCHLD then start polling for terminated child processes */
+/*
+	Signal handler for SIGCHLD
+*/
+void sigchld_handler(int signal_code) {
+	if(signal_code == SIGCHLD) { /* if the signal is of type SIGCHLD then start polling for terminated child processes */
 		poll();
 	}
 }

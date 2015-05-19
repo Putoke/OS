@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include "util.h"
 
-void terminate(pid_t childpid) {
+void terminate() {
 	int return_value;
 	return_value = kill(0, SIGTERM); /* terminate all child processes */
 	if(return_value == -1) {
@@ -68,6 +68,13 @@ void check_env(char ** args, char * pager) {
 		perror("Cannot exec printenv"); exit(1); /* if execlp returns an error has occured */
 	}
 
+	if(child_pid == -1) { /* if child_pid is -1 then an error has occured */
+		char * errormessage = "UNKNOWN";
+		if( EAGAIN == errno ) errormessage = "cannot allocate page table";
+		if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
+		fprintf( stderr, "fork() failed because: %s\n", errormessage );
+	}
+
 	child_pid = fork(); /* create the second child process (grep) */
 	if(child_pid == 0) {
 		/*Child process*/
@@ -91,6 +98,13 @@ void check_env(char ** args, char * pager) {
 		perror("Cannot exec grep"); exit(1); /* if execlp returns an error has occured */
 	}
 
+	if(child_pid == -1) { /* if child_pid is -1 then an error has occured */
+		char * errormessage = "UNKNOWN";
+		if( EAGAIN == errno ) errormessage = "cannot allocate page table";
+		if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
+		fprintf( stderr, "fork() failed because: %s\n", errormessage );
+	}
+
 	child_pid = fork(); /* create the third child process (sort) r*/
 	if(child_pid == 0) {
 		/*Child process*/
@@ -107,6 +121,13 @@ void check_env(char ** args, char * pager) {
 
 		(void) execlp("sort", "sort", (char *) 0); /* execute sort */
 		perror("Cannot exec sort"); exit(1); /* if execlp returns an error has occured */
+	}
+
+	if(child_pid == -1) { /* if child_pid is -1 then an error has occured */
+		char * errormessage = "UNKNOWN";
+		if( EAGAIN == errno ) errormessage = "cannot allocate page table";
+		if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
+		fprintf( stderr, "fork() failed because: %s\n", errormessage );
 	}
 
 	child_pid = fork(); /* create the fourth child proces (pager) */
@@ -129,6 +150,13 @@ void check_env(char ** args, char * pager) {
 
 		(void) execlp("more", "more", (char *) 0); /* execute more if less couldn't be executed */
 		perror("Cannot exec more"); exit(1); /* if execlp returns an error has occured */
+	}
+
+	if(child_pid == -1) { /* if child_pid is -1 then an error has occured */
+		char * errormessage = "UNKNOWN";
+		if( EAGAIN == errno ) errormessage = "cannot allocate page table";
+		if( ENOMEM == errno ) errormessage = "cannot allocate kernel data";
+		fprintf( stderr, "fork() failed because: %s\n", errormessage );
 	}
 
 	close_pipes(3, pipe_filedesc, pipe2_filedesc, pipe3_filedesc); /* close all pipes */
