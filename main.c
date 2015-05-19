@@ -211,11 +211,11 @@ void sigrelse_error(int signal_code) {
 	int return_value = sigrelse(signal_code);
 	if (return_value == -1) {
 		if(signal_code == SIGTERM)
-			fprintf(stderr, "Could not hold SIGTERM\n");
+			fprintf(stderr, "Could not relse SIGTERM\n");
 		else if (signal_code == SIGCHLD)
-			fprintf(stderr, "Could not hold SIGCHLD\n");
+			fprintf(stderr, "Could not relse SIGCHLD\n");
 		else if(signal_code == SIGINT)
-			fprintf(stderr, "Could not hold SIGINT\n");
+			fprintf(stderr, "Could not relse SIGINT\n");
 		exit(1);
 	}
 }
