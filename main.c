@@ -62,7 +62,7 @@ int main(int args, char ** argv) {
 		if(fgets(input, 1023, stdin)){				/*Scan user input*/
 			input[strcspn(input, "\r\n")] = 0;		/*Remove trailing newline*/
 
-			if (input[0] != '\0' && input[0] != ' ') /*If input is not empty then handle input*/
+			if (input[0] != '\0' && input[0] != ' ' && strcmp(input, "exit") != 0) /*If input is not empty then handle input*/
 				input_handle(input);
 			if(!signalTerm) { /* if signalTerm is 0 then start polling for terminated child processes */
 				poll();
