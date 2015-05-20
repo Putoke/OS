@@ -1,9 +1,14 @@
-#define _POSIX_SOURCE
+#define _POSIX_SOURCE /* enables functionality from the POSIX.1 standard*/
 #define _XOPEN_SOURCE 500
 
 #define TRUE 1
 #define FALSE 0
 
+
+/* 
+	Determines if polling or signals should be 
+	used to detect terminated backgroudn processes.
+*/
 #if defined(SIGDET) && SIGDET+0
 	int signalTerm = 1;
 #else
@@ -25,14 +30,13 @@
 
 
 void input_handle(char input[]);
-
 void register_sighandler(int signal_code, void (*handler)(int sig));
 void sigchld_handler(int signal_code);
 void sigint_handler(int signal_code);
 void sighold_error(int signal_code);
 void sigrelse_error(int signal_code);
-
 void poll();
+
 
 char *pager;
 
@@ -157,6 +161,9 @@ void poll() {
 	}
 }
 
+/*
+	Signal handler for SIGINT
+*/
 void sigint_handler(int signal_code) {
 	if(signal_code == SIGINT) {
 		int return_value = waitpid(-1, 0, 0); /* wait for the interrupted child to terminate */
@@ -194,9 +201,12 @@ void register_sighandler(int signal_code, void (*handler)(int sig)) {
 	}
 }
 
+/*
+	Runs sighold and checks for errors
+*/
 void sighold_error(int signal_code) {
-	int return_value = sighold(signal_code);
-	if (return_value == -1) {
+	int return_value = sighold(signal_code); /* hold signal */
+	if (return_value == -1) { /* sighold failed */
 		if(signal_code == SIGTERM)
 			fprintf(stderr, "Could not hold SIGTERM\n");
 		else if (signal_code == SIGCHLD)
@@ -207,9 +217,13 @@ void sighold_error(int signal_code) {
 	}
 }
 
+
+/*
+	Runs sigrelse and checks for errors
+*/
 void sigrelse_error(int signal_code) {
-	int return_value = sigrelse(signal_code);
-	if (return_value == -1) {
+	int return_value = sigrelse(signal_code); /* relse signal */
+	if (return_value == -1) { /* sigrelse failed */
 		if(signal_code == SIGTERM)
 			fprintf(stderr, "Could not relse SIGTERM\n");
 		else if (signal_code == SIGCHLD)
